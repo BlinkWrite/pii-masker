@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+*.xcodeproj
+.DS_Store
+dist/
+
+# A library does not pin its consumers' dependency graph — SwiftPM resolves
+# Package.resolved from the root package, and a committed one here would only
+# ever be this repository's own CI state.
+Package.resolved
+
+# The quick start unpacks the model here.
+model/
+model.tar.gz

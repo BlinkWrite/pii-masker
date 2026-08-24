@@ -1,0 +1,10 @@
+{
+  "_comment": "The same seven fields as ModelPin.current, for humans to read and diff. Nothing fetches this file; a test asserts it equals the pin, so the two cannot drift silently.",
+  "version": "2026.08.1",
+  "sourceURL": "https://huggingface.co/blinkwrite-ai/gliner-small-pii-onnx-int8/resolve/0f079cbb338b2de74cda307fc10c93409daa1747/gliner-pii-2026.08.1.tar.gz",
+  "archiveSHA256": "6dab57bc8f550b4e18b16b2b6d5a5de60712c5b5d34686f43873617e270b0a26",
+  "weightsSHA256": "2ac41b218b8a87aaf06222fe6431e04b7b2cccb1acc41d1009696ce455014ef7",
+  "bytes": 143492231,
+  "maxWidth": 12,
+  "maxSequenceLength": 768
+}

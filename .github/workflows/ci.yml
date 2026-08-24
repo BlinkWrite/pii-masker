@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Monthly: the pin is immutable, so a scheduled rerun only ever catches the
+    # model host going away — which needs no commit to happen, so no push-triggered job would
+    # ever see it. 1st of the month, 05:00 UTC.
+    - cron: "0 5 1 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only by default. A public repo runs this workflow for pull requests from forks, and the
+# default token grant is write — which a compromised dependency in the build could use.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: build + unit tests
+    # macOS 14 is the package's floor. Pinned rather than `-latest` so a runner image bump is a
+    # deliberate change and not a surprise red build.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tests use swift-testing (`import Testing`), which needs Swift 6. The runner's default
+      # toolchain is not enough on its own — the macos-14 image shipped Xcode 15 as its default for
+      # most of its life, and a default moves without warning in either direction. Newest 16-or-later
+      # present on the image, rather than one pinned path, so an Xcode being retired from the image
+      # is not a red build. No match fails here deliberately: the alternative is `swift test` failing
+      # later with an import error that reads like a problem with the code.
+      - name: Select Xcode
+        run: |
+          xc=$(ls -d /Applications/Xcode_*.app 2>/dev/null \
+               | awk -F'Xcode_' '$2 + 0 >= 16' | sort -V | tail -1)
+          [ -n "$xc" ] || { echo "::error::No Xcode 16+ on this runner image."; exit 1; }
+          sudo xcode-select -s "$xc"
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Build
+        run: swift build --build-tests
+
+      # No model and no network. The tier that needs weights is skipped here by design — see
+      # `ModelTierTests` — so a green run on a fresh checkout means the model-free contract holds,
+      # rather than meaning nothing ran.
+      - name: Test
+        run: swift test
+
+  model:
+    name: model tier
+    runs-on: macos-14
+    # Downloads ~137 MB of weights, so it stays off pull requests — a fork PR should not pay
+    # that on every commit. On a push to main it catches an inference regression at merge; on
+    # the monthly schedule it catches the weights becoming unfetchable. The `on:` block only
+    # fires pushes for main, so this needs no branch check of its own.
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tests use swift-testing (`import Testing`), which needs Swift 6. The runner's default
+      # toolchain is not enough on its own — the macos-14 image shipped Xcode 15 as its default for
+      # most of its life, and a default moves without warning in either direction. Newest 16-or-later
+      # present on the image, rather than one pinned path, so an Xcode being retired from the image
+      # is not a red build. No match fails here deliberately: the alternative is `swift test` failing
+      # later with an import error that reads like a problem with the code.
+      - name: Select Xcode
+        run: |
+          xc=$(ls -d /Applications/Xcode_*.app 2>/dev/null \
+               | awk -F'Xcode_' '$2 + 0 >= 16' | sort -V | tail -1)
+          [ -n "$xc" ] || { echo "::error::No Xcode 16+ on this runner image."; exit 1; }
+          sudo xcode-select -s "$xc"
+
+      # The same script a contributor runs, rather than a second copy of its logic here: it already
+      # reads the URL and both hashes out of model.json and checks them in the right order. A
+      # reimplementation would be the one path nobody runs locally, so a break in it would surface
+      # only on the monthly run.
+      - name: Fetch the pinned model
+        run: scripts/fetch-model.sh
+
+      - name: Test with the model
+        env:
+          PII_MASKER_MODEL_DIR: ${{ github.workspace }}/model
+        run: swift test

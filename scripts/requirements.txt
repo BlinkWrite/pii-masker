@@ -1,0 +1,30 @@
+# Toolchain for export_gliner_v2.py.
+#
+# Pinned so an export is repeatable. The MODEL input is pinned separately, in
+# export_gliner_v2.py's MODEL_REVISION — pinning the toolchain proves nothing
+# while the weights being exported can move, and the revision is the half that
+# was actually verified against the Hugging Face repo.
+#
+# VERIFIED 2026-08-24 (macOS 15, arm64, Python 3.12): a clean venv built from
+# this file exports a model.onnx whose SHA-256 is
+# 2ac41b218b8a87aaf06222fe6431e04b7b2cccb1acc41d1009696ce455014ef7 — byte for
+# byte the weightsSHA256 that ModelPin.v2026_08_1 names. Two consecutive runs
+# in the same venv also matched each other, so the quantizer is not picking up
+# per-run float noise. Not yet checked on a second machine or on x86.
+#
+# gliner is the version-sensitive pin. 0.2.28 traces 37 extra shape/mask nodes
+# into the graph and produces 84967ffa…, a different file with identical
+# weights. The other pins are not sensitive: swapping torch (2.11.0, 2.12.1,
+# 2.13.0) or transformers (4.57.6, 5.13.1) left model.onnx byte-identical.
+#
+# KNOWN GAP: archiveSHA256 does not reproduce here, for two reasons. bsdtar and
+# GNU tar frame the same files differently (see package-model.sh), and the
+# published tokenizer_config.json carries "tokenizer_class":
+# "XLMRobertaTokenizer" where both upstream and every in-range transformers
+# write "DebertaV2Tokenizer" — a 1-byte difference this recipe cannot currently
+# produce. weightsSHA256 is the number that reproduces; archiveSHA256 is not.
+gliner==0.2.27
+onnx==1.22.0
+onnxruntime==1.29.0
+torch==2.13.0
+transformers==4.57.6
