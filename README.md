@@ -132,6 +132,11 @@ let final = PrivacyFilter.restore(answer, with: restore)
 token map. Separate passes restart the counter, and a later field's `[PERSON_1]` would then collide
 with an earlier one on restore.
 
+Detections that cross a field separator are split around it. The separator stays intact and the
+detected content in each field stays masked. The gate logs separate reasons for missing models,
+sanitizer failures, timeouts, cancellation, and damaged field framing; every failure still returns
+`nil` without sending text.
+
 **`maskFields` does not mask names, and the initializer's `firstName`/`lastName` do nothing for
 it.** Once the fields are joined it cannot tell them apart, and the two scopes want different rules:
 a wrong match in a draft lands in text the user reads back, while conversation text they don't own

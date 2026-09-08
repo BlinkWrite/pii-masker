@@ -31,7 +31,7 @@ public actor PrivacyFilter {
     /// correctness ceiling.
     private let maxInputTokens: Int
     private let logging: MaskerLogging
-    private let log: os.Logger
+    let log: os.Logger
 
     // GLiNER special token IDs (from the exported model)
     private let clsTokenId: Int64 = 1
@@ -119,8 +119,8 @@ public actor PrivacyFilter {
     /// - Parameters:
     ///   - protecting: Structural marker words a caller embedded so several fields can be masked
     ///     in one pass (the join's guard/separator). GLiNER can false-positive a marker as PII;
-    ///     masking it would corrupt the caller's round-trip, so any detected span covering one is
-    ///     dropped before masking.
+    ///     masking it would corrupt the caller's round-trip. Spans crossing a marker are split
+    ///     around it so the detected content on both sides is still masked.
     ///   - userNameMasking: `false` skips the `[USER]` pass — for a caller that joined several
     ///     fields into one blob and already masked each by ``UserNameMask``'s per-field rules,
     ///     which this method can no longer tell apart.
@@ -171,7 +171,7 @@ public actor PrivacyFilter {
         let userMasked = userNameMasking ? maskUserName(trimmed) : trimmed
 
         // 1. Split into words
-        let words = splitWords(userMasked)
+        let words = Self.splitWords(userMasked)
         guard !words.isEmpty else { return (userMasked, []) }
 
         guard let tok = tokenizer, let sess = session else { return nil }
@@ -522,7 +522,7 @@ public actor PrivacyFilter {
     /// paste — a log dump, a long thread — spent ~2.4s here before inference even started, and 250
     /// KB spent ~14s, blowing ``defaultMaskTimeout`` on a serialized actor and stalling every
     /// request queued behind it. Carrying the offset is the same arithmetic done once.
-    private func splitWords(_ text: String) -> [Word] {
+    private static func splitWords(_ text: String) -> [Word] {
         var words: [Word] = []
         var i = text.startIndex
         var offset = 0
@@ -604,28 +604,36 @@ public actor PrivacyFilter {
 
     // MARK: - Masking
 
-    /// Drop any (already trimmed) span whose covered text is one of `protecting`: structural
-    /// markers a caller embedded to mask several fields in one pass. GLiNER can false-positive
-    /// such a marker as PII — masking it would corrupt the caller's round-trip and force the whole
-    /// request to be dropped. The markers are the caller's own literals, never real PII, so
-    /// skipping them leaks nothing. Pure; no-op when empty.
+    /// Exclude protected marker words from detections. A marker-only detection is dropped;
+    /// a detection crossing a marker is split, retaining the sensitive content on BOTH sides.
+    /// Dropping the whole crossing span would leave detected secrets unmasked.
+    ///
+    /// Match whole whitespace-delimited words, as the detector does, so a marker substring
+    /// inside a credential is never exempt. Trim the new pieces so the join's padding and
+    /// adjacent punctuation remain outside the placeholders. Offsets remain Character counts.
     public static func dropProtectedSpans(
         _ text: String,
         _ spans: [(start: Int, end: Int, label: String)],
         protecting: Set<String>
     ) -> [(start: Int, end: Int, label: String)] {
         guard !protecting.isEmpty else { return spans }
-        return spans.filter { span in
-            let lo =
-                text.index(
-                    text.startIndex, offsetBy: span.start,
-                    limitedBy: text.endIndex) ?? text.endIndex
-            let hi =
-                text.index(
-                    text.startIndex, offsetBy: span.end,
-                    limitedBy: text.endIndex) ?? text.endIndex
-            guard lo < hi else { return true }
-            return !protecting.contains(String(text[lo..<hi]))
+        let markers = splitWords(text).filter { protecting.contains($0.text) }
+        guard !markers.isEmpty else { return spans }
+        return spans.flatMap { span -> [(start: Int, end: Int, label: String)] in
+            let crossed = markers.filter { $0.charStart < span.end && $0.charEnd > span.start }
+            guard !crossed.isEmpty else { return [span] }
+            var pieces: [(start: Int, end: Int, label: String)] = []
+            var start = span.start
+            for marker in crossed {
+                if let part = trimSpan(text, start: start, end: marker.charStart) {
+                    pieces.append((part.start, part.end, span.label))
+                }
+                start = max(start, marker.charEnd)
+            }
+            if let part = trimSpan(text, start: start, end: span.end) {
+                pieces.append((part.start, part.end, span.label))
+            }
+            return pieces
         }
     }
 
