@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // The fail-closed gate: everything between "the caller has some strings" and "these are safe to
 // send, or send nothing". The join markers, the timeout race, the round-trip integrity check and
@@ -118,24 +119,44 @@ extension PrivacyFilter {
         _ values: [String], timeout: TimeInterval
     ) async -> (masked: [String], restore: [String: String])? {
         guard !values.isEmpty else { return ([], [:]) }
+        guard !Task.isCancelled else {
+            log.debug("privacy: maskFields cancelled before masking — dropping")
+            return nil
+        }
 
         // The download hasn't landed yet (fresh install, failed download): hold rather than risk
         // sending unmasked text. `sanitize` would fail-and-drop anyway; this is the explicit,
         // quiet early-out, and it is part of the gate rather than a caller optimisation.
-        guard hasResolvableModel else { return nil }
+        guard hasResolvableModel else {
+            log.error("privacy: maskFields has no installed model — dropping")
+            return nil
+        }
 
         let joined = Self.joinForMasking(values)
+        guard Self.splitMaskedFields(joined, count: values.count) == values else {
+            log.error("privacy: maskFields input contains a field separator — dropping")
+            return nil
+        }
         let outcome = await Self.withTimeout(seconds: timeout) {
             await self.sanitize(
                 joined, protecting: Self.maskMarkerWords, userNameMasking: false)
         }
+        guard !Task.isCancelled else {
+            log.debug("privacy: maskFields cancelled during masking — dropping")
+            return nil
+        }
         switch Self.resolveMask(outcome) {
         case .send(let sanitized):
             guard let fields = Self.splitMaskedFields(sanitized.text, count: values.count) else {
+                log.error("privacy: maskFields integrity check failed for \(values.count, privacy: .public) fields — separator or guard changed; dropping")
                 return nil
             }
             return (fields, sanitized.restore)
-        case .dropFilterFailed, .dropTimedOut:
+        case .dropFilterFailed:
+            log.error("privacy: maskFields sanitizer failed — see model/inference error; dropping")
+            return nil
+        case .dropTimedOut:
+            log.error("privacy: maskFields exceeded \(timeout, privacy: .public)s timeout — dropping")
             return nil
         }
     }
