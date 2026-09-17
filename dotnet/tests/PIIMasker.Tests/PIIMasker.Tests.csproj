@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PIIMasker.Tests</AssemblyName>
+    <RootNamespace>PIIMasker.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!--
+      The current runtime by default, and the shipped net8.0 floor as well when asked for with
+      `-p:TestFloor=true`. CI asks, after installing that runtime, so the floor the library actually
+      targets is exercised rather than merely compiled against.
+
+      Opt-in rather than always, because the .NET 10 SDK does not carry the .NET 8 runtime: a
+      contributor who cloned this and ran `dotnet test` would otherwise get a hard failure telling
+      them to install a runtime they have no reason to want. That trades one gap for a worse one.
+    -->
+    <!-- Cleared: Directory.Build.props sets the singular TargetFramework for the library, and a
+         singular value wins over a plural one — so without this the list below is ignored. -->
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TestFloor)' == 'true'">net8.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- Coverage, so "tested" is a measurement rather than an impression. -->
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/PIIMasker/PIIMasker.csproj" />
+  </ItemGroup>
+  <!--
+    The native tokenizer, for the model tier only. The library leaves the RID choice to its
+    consumer so it does not force a Windows-only graph on a Linux host; a test project IS a
+    consumer, and without this the weights load and the tokenizer does not.
+  -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.win-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.win-arm64" Version="1.4.1" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.linux-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.linux-arm64" Version="1.4.1" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.osx-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.osx-arm64" Version="1.4.1" />
+  </ItemGroup>
+
+  <!--
+    The canonical manifest is read from the repository root at run time, not copied, so the test
+    cannot pass against a stale duplicate. The path is baked in at build time because the test
+    binary runs several directories below it.
+  -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PIIMaskerRepoRoot</_Parameter1>
+      <_Parameter2>$(PIIMaskerRepoRoot)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

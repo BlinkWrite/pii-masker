@@ -1,10 +1,15 @@
 {
-  "_comment": "The same seven fields as ModelPin.current, for humans to read and diff. Nothing fetches this file; a test asserts it equals the pin, so the two cannot drift silently.",
+  "_comment": "The same seven fields as ModelPin.current, for humans to read and diff, plus `files` for targets that open the loose tokenizer files themselves. Nothing fetches this file; a test in EACH language target asserts it equals that target's pin, so neither can drift from this document or from the other.",
   "version": "2026.08.1",
   "sourceURL": "https://huggingface.co/blinkwrite-ai/gliner-small-pii-onnx-int8/resolve/0f079cbb338b2de74cda307fc10c93409daa1747/gliner-pii-2026.08.1.tar.gz",
   "archiveSHA256": "6dab57bc8f550b4e18b16b2b6d5a5de60712c5b5d34686f43873617e270b0a26",
   "weightsSHA256": "2ac41b218b8a87aaf06222fe6431e04b7b2cccb1acc41d1009696ce455014ef7",
   "bytes": 143492231,
   "maxWidth": 12,
-  "maxSequenceLength": 768
+  "maxSequenceLength": 768,
+  "_filesComment": "SHA-256 of the loose files a target loads directly. The Swift target reaches the tokenizer through swift-transformers and ignores this block; the .NET target opens both files itself, so their bytes are part of the identity it accepts.",
+  "files": {
+    "tokenizerSHA256": "07d65756a669ff551b99568f8cf6e34a2937462816a15dd77d1c43ee78d2372c",
+    "tokenizerConfigSHA256": "a3c213a21a411d13a28b10f037219d95ba24ab8ebf2469ec647edabb3bf75097"
+  }
 }

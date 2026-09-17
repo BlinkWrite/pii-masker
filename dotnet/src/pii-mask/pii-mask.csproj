@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>pii-mask</AssemblyName>
+    <RootNamespace>PIIMasker.Cli</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!--
+      The library targets net8.0 so a host on the shipped floor can consume it. This tool is a
+      developer convenience run from the repository, so it follows the current runtime instead.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../PIIMasker/PIIMasker.csproj" />
+  </ItemGroup>
+
+  <!--
+    The base Tokenizers.DotNet and ONNX Runtime packages carry no native runtime; the library leaves
+    that choice to its consumer so it does not force a Windows-only graph on a Linux host. This
+    tool IS a consumer, so it makes the choice — for whatever machine it is being run on.
+  -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.win-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.win-arm64" Version="1.4.1" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.linux-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.linux-arm64" Version="1.4.1" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PackageReference Include="Tokenizers.DotNet.runtime.osx-x64" Version="1.4.1" />
+    <PackageReference Include="Tokenizers.DotNet.runtime.osx-arm64" Version="1.4.1" />
+  </ItemGroup>
+</Project>

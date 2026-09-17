@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    The .NET target lives under `dotnet/` rather than beside the Swift sources because SwiftPM
+    compiles everything it finds under `Sources/` and `Tests/`. Keeping the two toolchains in
+    separate trees means neither has to be told to ignore the other.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- The repository root, so a test can read the canonical `model.json` the Swift target reads. -->
+    <PIIMaskerRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../'))</PIIMaskerRepoRoot>
+  </PropertyGroup>
+</Project>
