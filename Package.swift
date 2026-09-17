@@ -22,6 +22,13 @@ let package = Package(
         .package(url: "https://github.com/huggingface/swift-transformers", from: "1.3.2"),
         .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager", from: "1.22.0"),
     ],
+    // Every target carries an explicit `path` because the sources now live under `swift/`, one
+    // folder per language target — see the root README.
+    //
+    // This manifest itself stays at the repository root and cannot move: SwiftPM resolves a git
+    // dependency by reading `Package.swift` there, with no way to point a repository URL at a
+    // subdirectory. Moving it would break every consumer pinning this repository, BlinkWrite's
+    // macOS app included.
     targets: [
         .target(
             name: "PIIMasker",
@@ -29,15 +36,18 @@ let package = Package(
                 .product(name: "Hub", package: "swift-transformers"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
                 .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
-            ]
+            ],
+            path: "swift/Sources/PIIMasker"
         ),
         .executableTarget(
             name: "pii-mask",
-            dependencies: ["PIIMasker"]
+            dependencies: ["PIIMasker"],
+            path: "swift/Sources/pii-mask"
         ),
         .testTarget(
             name: "PIIMaskerTests",
-            dependencies: ["PIIMasker"]
+            dependencies: ["PIIMasker"],
+            path: "swift/Tests/PIIMaskerTests"
         ),
     ]
 )

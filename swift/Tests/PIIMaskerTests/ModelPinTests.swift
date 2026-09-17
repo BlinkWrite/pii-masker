@@ -8,12 +8,16 @@ import Testing
 @Suite("Model pin")
 struct ModelPinTests {
 
-    /// `Tests/PIIMaskerTests/ModelPinTests.swift` → the package root.
+    /// `swift/Tests/PIIMaskerTests/ModelPinTests.swift` → the repository root.
+    ///
+    /// Four levels, not three: `model.json` is shared with the .NET target, so it stays at the
+    /// repository root while the Swift sources live under `swift/`.
     static var packageRoot: URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()   // PIIMaskerTests
             .deletingLastPathComponent()   // Tests
-            .deletingLastPathComponent()   // <root>
+            .deletingLastPathComponent()   // swift
+            .deletingLastPathComponent()   // <repository root>
     }
 
     struct PinJSON: Decodable {
