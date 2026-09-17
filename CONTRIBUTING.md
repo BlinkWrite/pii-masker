@@ -22,6 +22,37 @@ scripts/fetch-model.sh          # downloads, verifies both hashes, unpacks into 
 PII_MASKER_MODEL_DIR=./model swift test
 ```
 
+`fetch-model.sh` reads `model.json` with `python3`, so it needs one on PATH; it is used for nothing
+else and the script says so if it is missing.
+
+### The .NET target
+
+Same shape, same contract:
+
+```sh
+cd dotnet
+dotnet build
+dotnet test
+```
+
+`dotnet test` likewise needs no model and no network, and the weights-only tier is opt-in the same
+way:
+
+```sh
+PII_MASKER_MODEL_DIR=/path/to/gliner dotnet test
+```
+
+The library ships `net8.0`; the suite runs on the current runtime by default and on that floor as
+well with `-p:TestFloor=true`, which is what CI does. Running it yourself needs the .NET 8 runtime
+installed, which is why it is not the default.
+
+There is also a `pii-mask` command-line tool, the counterpart of the Swift one, for looking at what
+the masker catches without writing any code:
+
+```sh
+dotnet run --project dotnet/src/pii-mask -- --model ./model --show-map <<< "email me at a@b.com"
+```
+
 ## What a good change looks like
 
 - **A bug becomes a test first.** Write the failing test, confirm it is red for the right reason,
@@ -42,10 +73,18 @@ new one:
    It prints the four numbers a pin needs.
 3. Upload the archive somewhere immutable. For Hugging Face that means a `resolve/<commit-sha>/`
    URL — never `resolve/main`, or the bytes under a published pin could change.
-4. **Append** a `ModelPin` to `ModelPin.known`. Never edit or remove an existing entry: rollback
-   walks that list, and an older entry has to stay fetchable.
-5. Copy the same seven fields into `model.json`. A test compares the two, so skipping this is a red
-   build rather than a silent drift.
+4. **Append** a pin in BOTH targets — `ModelPin.known` in Swift and `ModelPin.Known` in .NET.
+   Never edit or remove an existing entry: rollback walks that list, and an older entry has to stay
+   fetchable.
+5. Copy the same seven fields into `model.json`, plus the `files` block: the SHA-256 of
+   `tokenizer.json` and `tokenizer_config.json`. The .NET target opens those two directly and
+   verifies them on every load, so they are part of the identity it accepts; the Swift target
+   reaches the tokenizer through swift-transformers and ignores the block. `package-model.sh`
+   prints the numbers a pin needs.
+
+   Each target has a test asserting its own pin equals `model.json`, so skipping either is a red
+   build rather than a silent drift — but note that means updating one target and not the other
+   fails only that target's suite.
 
 `maxWidth` must equal the model's `config.max_width`, and `maxSequenceLength` its `config.max_len`.
 Both ride on the pin rather than in `MaskerConfig` because they are properties of the weights —
