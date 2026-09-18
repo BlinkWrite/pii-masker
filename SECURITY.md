@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report privately through GitHub's [security advisory
-form](https://github.com/BlinkWrite/swift-pii-masker/security/advisories/new) rather than
+form](https://github.com/BlinkWrite/pii-masker/security/advisories/new) rather than
 opening a public issue. Please include a reproduction and the version or commit you tested.
 
 We aim to acknowledge within a few working days.

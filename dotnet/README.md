@@ -11,8 +11,10 @@ token it can reason around instead of a hole in the sentence.
 Detection is [GLiNER](https://github.com/urchade/GLiNER) (ONNX INT8) through ONNX Runtime. Nothing
 leaves the machine except the model download.
 
-`net8.0` and above. MIT. The .NET target of [pii-masker](../README.md); the Swift target is
-[over here](../swift/README.md), and the two are kept behaviour-for-behaviour.
+`net8.0` and above. MIT. The .NET target of
+[pii-masker](https://github.com/BlinkWrite/pii-masker/blob/main/README.md); the Swift target is
+[over here](https://github.com/BlinkWrite/pii-masker/blob/main/swift/README.md), and the two are
+kept behaviour-for-behaviour.
 
 ## Quick start
 
@@ -21,8 +23,8 @@ Mask something on the command line first, before wiring it into anything.
 **1. Build.**
 
 ```sh
-git clone https://github.com/BlinkWrite/swift-pii-masker
-cd swift-pii-masker/dotnet
+git clone https://github.com/BlinkWrite/pii-masker
+cd pii-masker/dotnet
 dotnet build
 ```
 
@@ -33,7 +35,8 @@ cd ..
 scripts/fetch-model.sh
 ```
 
-It reads the URL and both hashes out of [`model.json`](../model.json), checks the archive, unpacks
+It reads the URL and both hashes out of
+[`model.json`](https://github.com/BlinkWrite/pii-masker/blob/main/model.json), checks the archive, unpacks
 it into `./model`, and checks the unpacked weights — the second check *after* unpacking, which is
 the whole point of having two. See [Getting the model](#getting-the-model). Re-running it when the
 model is already there does nothing. The script reads `model.json` with `python3`, so it needs one
@@ -82,7 +85,8 @@ graph into a Linux consumer's dependency tree. Add the RIDs you ship:
 The model is **pinned**: `ModelPin.Current` states the version, an immutable source URI, the
 SHA-256 of the archive, the SHA-256 of the unpacked weights, the byte count, the two shape limits
 the weights impose, and the SHA-256 of the two loose tokenizer files this target opens directly.
-Those values are compiled in. [`model.json`](../model.json) states the same thing in a file a human
+Those values are compiled in.
+[`model.json`](https://github.com/BlinkWrite/pii-masker/blob/main/model.json) states the same thing in a file a human
 can diff, and `ModelPinTests` fails the build if the two disagree.
 
 Both hashes are checked, and the order is the point rather than an accident: the archive is verified
@@ -185,7 +189,8 @@ No network and no weights. The masking tests cover the pure logic — span trimm
 placeholder minting, the restore round trip, the framing guard, the boundary splits, the name rules
 — and the install tests build real `.tar.gz` fixtures and install them over `file://`, so the
 download, both checksum gates, the unpack, the promotion and every rejection path are exercised
-anywhere. `ModelPinTests` asserts the compiled pin equals the shared [`model.json`](../model.json).
+anywhere. `ModelPinTests` asserts the compiled pin equals the shared
+[`model.json`](https://github.com/BlinkWrite/pii-masker/blob/main/model.json).
 
 Detection itself needs real weights, so it is a **model tier** that skips unless you opt in:
 
@@ -226,7 +231,8 @@ which a caller treats as "send nothing", and is not the same as "found no PII".
   lower it and legitimate text becomes a placeholder, which `Restore` puts back — so a false
   positive costs prompt noise, not data. The two errors are not equally bad, and the floor sits
   below the middle for that reason. The default came from measurement on these weights, tabulated in
-  the [Swift target's README](../swift/README.md#configuration); the short version is that recall
+  the [Swift target's README](https://github.com/BlinkWrite/pii-masker/blob/main/swift/README.md#configuration);
+  the short version is that recall
   depends far more on how much text surrounds the PII than on the threshold. **If you mask long
   context, consider `0.05`.**
 - **`MaxInputTokens`** — the cost ceiling, default `2000` tokens. Text longer than one 768-token
@@ -314,9 +320,11 @@ name. This target does what both intend.
 
 ## License and attribution
 
-MIT — see [LICENSE](../LICENSE).
+MIT — see [LICENSE](https://github.com/BlinkWrite/pii-masker/blob/main/LICENSE).
 
 The model is a modified `vicgalle/gliner-small-pii` (Apache-2.0), itself fine-tuned from
 `gliner-community/gliner_small-v2.5` (Apache-2.0). The modification is the ONNX + INT8 conversion
-in [`scripts/export_gliner_v2.py`](../scripts/export_gliner_v2.py); no retraining was done. Full
-attribution, including GLiNER itself, is in [NOTICE](../NOTICE).
+in [`scripts/export_gliner_v2.py`](https://github.com/BlinkWrite/pii-masker/blob/main/scripts/export_gliner_v2.py);
+no retraining was done. Full
+attribution, including GLiNER itself, is in
+[NOTICE](https://github.com/BlinkWrite/pii-masker/blob/main/NOTICE).

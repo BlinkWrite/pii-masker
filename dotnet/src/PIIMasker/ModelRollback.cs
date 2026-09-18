@@ -147,10 +147,23 @@ public sealed class ModelRollback
     /// <param name="FailedVersions">Key for the refused-version list.</param>
     public sealed record SettingsKeys(string Probation, string FailedVersions)
     {
-        /// <summary>The library's own key names.</summary>
+        /// <summary>
+        /// The library's own key names, used when a host supplies none of its own.
+        /// </summary>
+        /// <remarks>
+        /// The Swift target's <c>SettingsKeys.default</c> holds these same two strings and has to
+        /// keep agreeing with them: both targets can be pointed at one store, and a rollback record
+        /// written by either has to be the record the other reads.
+        ///
+        /// They are persisted keys, so changing them once something relies on them abandons what
+        /// was written under the old names — a model part-way through probation stops being
+        /// watched, and versions already known to fail get offered again. Nothing relies on them
+        /// yet, which is why they could still be renamed with the repository: the one shipping
+        /// consumer passes its own pair, which is what this fallback exists for.
+        /// </remarks>
         public static SettingsKeys Default { get; } = new(
-            "com.github.swift-pii-masker.modelUpdate.probation",
-            "com.github.swift-pii-masker.modelUpdate.failedVersions");
+            "com.github.pii-masker.modelUpdate.probation",
+            "com.github.pii-masker.modelUpdate.failedVersions");
     }
 
     /// <summary>What <see cref="ResolveAtLaunch"/> decided.</summary>

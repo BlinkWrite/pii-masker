@@ -27,8 +27,8 @@
     <Description>On-device PII detection and masking over GLiNER/ONNX, with a pinned, hash-verified model install. The .NET counterpart of the Swift PIIMasker target.</Description>
     <Authors>TalentHQ Labs, Inc.</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/BlinkWrite/swift-pii-masker</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/BlinkWrite/swift-pii-masker</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/BlinkWrite/pii-masker</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BlinkWrite/pii-masker</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 

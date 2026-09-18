@@ -18,7 +18,7 @@ public struct MaskerLogging: Sendable {
         self.debug = debug
     }
 
-    public static let silent = MaskerLogging(subsystem: "com.github.swift-pii-masker")
+    public static let silent = MaskerLogging(subsystem: "com.github.pii-masker")
 
     func logger(_ category: String) -> Logger {
         Logger(subsystem: subsystem, category: category)
