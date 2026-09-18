@@ -34,7 +34,7 @@ struct ModelRollbackTests {
         let root = TestPublish.scratch()
         let install = root.appendingPathComponent("install", isDirectory: true)
         try FileManager.default.createDirectory(at: install, withIntermediateDirectories: true)
-        let suite = "com.github.swift-pii-masker.tests-\(UUID().uuidString)"
+        let suite = "com.github.pii-masker.tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         return (install, defaults, ModelRollback(installRoot: install, defaults: defaults), Trash(root))
     }

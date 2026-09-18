@@ -34,9 +34,20 @@ public struct ModelRollback {
             self.failedVersions = failedVersions
         }
 
+        /// The library's own key names, used when a host supplies none of its own.
+        ///
+        /// The .NET target's `SettingsKeys.Default` holds these same two strings and has to keep
+        /// agreeing with them: both targets can be pointed at one store, and a rollback record
+        /// written by either has to be the record the other reads.
+        ///
+        /// They are persisted `UserDefaults` keys, so changing them once something relies on them
+        /// abandons what was written under the old names — a model part-way through probation stops
+        /// being watched, and versions already known to fail get offered again. Nothing relies on
+        /// them yet, which is why they could still be renamed with the repository: the one shipping
+        /// consumer passes its own pair, which is what this fallback exists for.
         public static let `default` = SettingsKeys(
-            probation: "com.github.swift-pii-masker.modelUpdate.probation",
-            failedVersions: "com.github.swift-pii-masker.modelUpdate.failedVersions")
+            probation: "com.github.pii-masker.modelUpdate.probation",
+            failedVersions: "com.github.pii-masker.modelUpdate.failedVersions")
     }
 
     public enum LaunchOutcome: Equatable {

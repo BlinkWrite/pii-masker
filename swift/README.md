@@ -1,4 +1,4 @@
-# swift-pii-masker
+# pii-masker
 
 Find PII in text on-device and replace it with **reversible** placeholders, so text can be sent to
 a remote model and the real values swapped back into the answer locally.
@@ -20,8 +20,8 @@ Mask something on the command line first, before wiring it into anything.
 **1. Build.**
 
 ```sh
-git clone https://github.com/BlinkWrite/swift-pii-masker
-cd swift-pii-masker
+git clone https://github.com/BlinkWrite/pii-masker
+cd pii-masker
 swift build
 ```
 
@@ -63,7 +63,7 @@ Then read [Example](#example) for the library, and [The CLI](#the-cli) for the r
 ## Add it to your package
 
 ```swift
-.package(url: "https://github.com/BlinkWrite/swift-pii-masker", from: "0.1.0")
+.package(url: "https://github.com/BlinkWrite/pii-masker", from: "0.1.0")
 ```
 
 ## Getting the model
