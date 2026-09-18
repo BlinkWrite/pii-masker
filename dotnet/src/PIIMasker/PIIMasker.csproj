@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PIIMasker</AssemblyName>
+    <RootNamespace>PIIMasker</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!--
+    Package identity. `PackageId` is a public, first-come namespace on nuget.org; `PIIMasker` was
+    unclaimed when this was written. Re-check before the first publish — the window between reading
+    that and pushing is somebody else's opportunity.
+  -->
+  <PropertyGroup>
+    <PackageId>PIIMasker</PackageId>
+    <!--
+      Tracks the REPOSITORY's release tag rather than carrying a version line of its own. The Swift
+      target is resolved by SwiftPM from that same git tag, so the repository already has exactly one
+      version series and a second one here would mean two answers to "which release is this".
+
+      0.2.0 because 0.1.0 is already tagged, and its tree contains no `dotnet/` at all: publishing
+      this as 0.1.0 would name a release that never held it. Adding a language target is a minor
+      bump — nothing about the Swift target changes.
+
+      Tag the repository `0.2.0` when this publishes, so the two cannot drift.
+    -->
+    <Version>0.2.0</Version>
+    <Description>On-device PII detection and masking over GLiNER/ONNX, with a pinned, hash-verified model install. The .NET counterpart of the Swift PIIMasker target.</Description>
+    <Authors>TalentHQ Labs, Inc.</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/BlinkWrite/swift-pii-masker</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BlinkWrite/swift-pii-masker</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!--
+    The .NET target's own README, not the repository root one — that is a routing page pointing at
+    both language targets, which is the wrong first page for someone who just installed this package.
+  -->
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!--
+    Inference dependencies. The base Tokenizers.DotNet package carries no native runtime — a
+    consumer adds the RID-specific runtime package for the platforms it ships, so this library does
+    not force a Windows-only graph onto a Linux host.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
+    <PackageReference Include="Tokenizers.DotNet" Version="1.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PIIMasker.Tests" />
+  </ItemGroup>
+</Project>

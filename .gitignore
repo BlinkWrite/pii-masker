@@ -12,3 +12,11 @@ Package.resolved
 # The quick start unpacks the model here.
 model/
 model.tar.gz
+
+# .NET build output (the dotnet/ target).
+bin/
+obj/
+*.user
+
+# The local folder feed, a temporary bridge until the package has a real home.
+dotnet/artifacts/

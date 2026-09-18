@@ -89,3 +89,67 @@ jobs:
         env:
           PII_MASKER_MODEL_DIR: ${{ github.workspace }}/model
         run: swift test
+
+  dotnet:
+    name: .NET build + unit tests
+    # Both, deliberately. The library is cross-platform, but a good deal of what it guards is not:
+    # path-component safety, the reserved Windows device names, and the `current` pointer file that
+    # exists because Windows cannot promote with a symlink. Linux alone would never exercise them,
+    # and Windows alone would let a POSIX-only regression through.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both runtimes: the library ships net8.0, and `-p:TestFloor=true` below runs the suite there
+      # as well as on the current runtime, so the floor is executed rather than merely compiled
+      # against. Without the 8.0 entry that leg fails with a missing-runtime error.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Show toolchain
+        run: dotnet --info
+
+      # Warnings are errors for every project here (see dotnet/Directory.Build.props), so a build
+      # that succeeds is also a build with nothing left to tidy.
+      # TestFloor must be set on BOTH steps: it is what puts net8.0 into the target list, and a
+      # `--no-build` test run that asks for a framework the build did not produce fails with
+      # NETSDK1005 rather than with anything that names the real cause.
+      - name: Build
+        run: dotnet build dotnet/PIIMasker.sln -c Release -p:TestFloor=true
+
+      # No model and no network. The tier that needs weights is skipped here by design — see
+      # `ModelTierTests` — so a green run on a fresh checkout means the model-free contract holds,
+      # rather than meaning nothing ran.
+      - name: Test
+        run: dotnet test dotnet/PIIMasker.sln -c Release --no-build -p:TestFloor=true
+
+  dotnet-model:
+    name: .NET model tier
+    runs-on: ubuntu-latest
+    # Downloads ~137 MB of weights, so it stays off pull requests for the same reason the Swift
+    # model job does. One platform is enough here: this tier tests inference, which is ONNX Runtime
+    # and the weights rather than anything platform-specific.
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # The same script a contributor runs, rather than a second copy of its logic here. It needs
+      # python3, which every ubuntu runner image carries.
+      - name: Fetch the pinned model
+        run: scripts/fetch-model.sh
+
+      - name: Test with the model
+        env:
+          PII_MASKER_MODEL_DIR: ${{ github.workspace }}/model
+        run: dotnet test dotnet/PIIMasker.sln -c Release

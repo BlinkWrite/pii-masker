@@ -89,6 +89,13 @@ ARCHIVE_SHA="$(sha256_of "$ARCHIVE")"
 WEIGHTS_SHA="$(sha256_of "$SRC/model.onnx")"
 BYTES="$(wc -c < "$ARCHIVE" | tr -d '[:space:]')"
 
+# The loose tokenizer files, for targets that open them directly. The .NET target does and verifies
+# these on every load, so they are part of the identity it accepts; the Swift target reaches the
+# tokenizer through swift-transformers and ignores them. Emitted here rather than left to be typed
+# by hand, because a pin whose numbers are hand-copied is a pin that eventually is not.
+TOKENIZER_SHA="$(sha256_of "$SRC/tokenizer.json")"
+TOKENIZER_CONFIG_SHA="$(sha256_of "$SRC/tokenizer_config.json")"
+
 # Both are properties of the WEIGHTS, so they are read out of the exported config rather than
 # typed by hand. max_len is the safety-critical one: too high and over-length input reaches a model
 # that silently stops detecting, which is the one way the masker can fail open.
@@ -113,7 +120,11 @@ cat > "$OUT/model.json" <<EOF
   "weightsSHA256": "$WEIGHTS_SHA",
   "bytes": $BYTES,
   "maxWidth": $MAX_WIDTH,
-  "maxSequenceLength": $MAX_SEQ
+  "maxSequenceLength": $MAX_SEQ,
+  "files": {
+    "tokenizerSHA256": "$TOKENIZER_SHA",
+    "tokenizerConfigSHA256": "$TOKENIZER_CONFIG_SHA"
+  }
 }
 EOF
 
@@ -121,6 +132,9 @@ echo
 echo "Wrote $OUT/model.json:"
 cat "$OUT/model.json"
 echo
-echo "Next: upload $ARCHIVE, then add a ModelPin entry with the fields above and"
-echo "the archive's immutable URL (a commit SHA, never a branch). Copy the same"
-echo "seven fields into model.json at the repository root — a test compares them."
+echo "Next: upload $ARCHIVE, then add a pin entry in BOTH targets with the fields"
+echo "above and the archive's immutable URL (a commit SHA, never a branch):"
+echo "  swift/Sources/PIIMasker/ModelPin.swift   ModelPin.known"
+echo "  dotnet/src/PIIMasker/ModelPin.cs         ModelPin.Known  (also takes the files block)"
+echo "Then copy this file over model.json at the repository root. Each target has a"
+echo "test comparing its own pin against it, so a target you forget goes red on its own."

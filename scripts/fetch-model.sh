@@ -29,6 +29,19 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PIN="$ROOT/model.json"
 [[ -f "$PIN" ]] || err "model.json not found at $PIN"
 
+# model.json is parsed with python3 rather than with grep, because a mis-parsed hash is worse than
+# a missing dependency: the download would then be checked against the wrong value, which is the one
+# failure this script exists to prevent.
+#
+# Checked up front so the failure names itself. Without this the script still stops — `set -e` sees
+# to that — but it stops on the first field read with whatever the platform says about python, which
+# on Windows is a Microsoft Store advert mentioning neither this script nor what it wanted.
+# Probed by RUNNING it, not by `command -v`: on Windows the App Execution Alias is a real
+# executable on PATH that exists solely to advertise the Microsoft Store, so looking it up succeeds
+# and using it does not.
+python3 -c "pass" >/dev/null 2>&1 \
+    || err "python3 is needed to read $PIN, and is used for nothing else here."
+
 field() { python3 -c "import json,sys;print(json.load(open(sys.argv[1]))[sys.argv[2]])" "$PIN" "$1"; }
 
 VERSION="$(field version)"
